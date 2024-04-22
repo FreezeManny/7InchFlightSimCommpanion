@@ -2,21 +2,36 @@
   import { AppShell, AppBar } from "@skeletonlabs/skeleton";
   import { RadioGroup, RadioItem } from "@skeletonlabs/skeleton";
   import { writable } from 'svelte/store';
+  import { page } from '$app/stores';
 
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   const tabSet = writable(0);
+
+
+  let activePath: String | null;
+  let valueSingle: string;
+
+  $: {
+    activePath = $page.route.id;
+    valueSingle = activePath as string;
+  }
+  
+  onMount(() => {
+	valueSingle = activePath as string;
+  });
 
 </script>
 
 <header>
 	<AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end" class="justify-items-center items-center">
 		<svelte:fragment slot="lead">
-		<RadioGroup bind:group={$tabSet}>
-			<RadioItem bind:group={$tabSet} name="justify" value={0} on:change={() => goto('/radio')}>Radio</RadioItem>
-			<RadioItem bind:group={$tabSet} name="justify" value={1} on:change={() => goto('/fenix')}>FenixMCDU</RadioItem>
-			<RadioItem bind:group={$tabSet} name="justify" value={2} on:change={() => goto('/weather')}>Weather</RadioItem>
-			<RadioItem bind:group={$tabSet} name="justify" value={3} on:change={() => goto('/flightplan')}>fPlan</RadioItem>
+		<RadioGroup bind:group={valueSingle}>
+			<RadioItem bind:group={valueSingle} name="justify" value={'/radio'} on:change={() => goto('/radio')}>Radio</RadioItem>
+			<RadioItem bind:group={valueSingle} name="justify" value={'/fenix'} on:change={() => goto('/fenix')}>FenixMCDU</RadioItem>
+			<RadioItem bind:group={valueSingle} name="justify" value={'/weather'} on:change={() => goto('/weather')}>Weather</RadioItem>
+			<RadioItem bind:group={valueSingle} name="justify" value={'/flightplan'} on:change={() => goto('/flightplan')}>fPlan</RadioItem>
 		  </RadioGroup>
 		</svelte:fragment>
 		<svelte:fragment slot="trail">  

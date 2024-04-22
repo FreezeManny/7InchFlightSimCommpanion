@@ -24,20 +24,12 @@
     console.log("Link: " + pdfLink);
   });
 
-  let iframeWidth = window.innerWidth;
-let iframeHeight = window.innerHeight;
-
-  // Update dimensions on window resize
-  window.addEventListener('resize', () => {
-      iframeWidth = window.innerWidth;
-      iframeHeight = window.innerHeight;
-    });
 </script>
 
 
 <iframe
+title="flightplan"
 src={pdfLink}
-width={iframeWidth}
-height={iframeHeight}
 style="border: none;"
+class="w-full h-full"
 />
