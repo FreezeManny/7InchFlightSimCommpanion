@@ -220,8 +220,8 @@
 	<button type="button" class="btn variant-filled mx-3" on:click={simbriefButtonHandler}>Simbrief</button>
 </div>
 
-<div class="grid grid-rows-2 grid-flow-col gap-4 p-2">
-	<div class="card">
+<div class="flex flex-col p-2">
+	<div class="card my-1">
 		<header class="card-header">{dep.heading}</header>
 		<section class="p-4">
 			<div class="card mb-2">
@@ -235,7 +235,7 @@
 		</section>
 	</div>
 
-	<div class="card">
+	<div class="card my-1">
 		<header class="card-header">{arr.heading}</header>
 		<section class="p-4">
 			<div class="card mb-2">
