@@ -7,31 +7,66 @@
 	import type { Writable } from 'svelte/store';
 	import { get } from 'svelte/store';
 
-	
+	import { EventEmitter } from 'events';
+
+	class VariableWatcher extends EventEmitter {
+		private _variable: any = null;
+
+		set var(value: any) {
+			this._variable = value;
+			this.emit('change', value);
+		}
+
+		get var(): any {
+			return this._variable;
+		}
+	}
+
 	// Change the variables
 
 	const VATSIMDATAURL = 'https://data.vatsim.net/v3/vatsim-data.json';
 	const VATSIM_METAR_URL = 'https://metar.vatsim.net/';
 
-	var depAirportConf = 'Departure Airport: XXXX';
-	var arrAirportConf = 'Departure Airport: XXXX';
+	var dep = {
+		heading: 'Departure Airport: XXXX',
+		input: '',
+		atisCode: '',
+		atisText: '',
+		metar: ''
+	};
 
-	var depAirport = '';
-	var arrAirport = '';
-
-	var depAtisCode = '';
-	var arrAtisCode = '';
-
-	var depATIS = 'Enter an Airport';
-	var arrATIS = 'Enter an Airport';
-
-	var depMETAR = 'Enter an Airport';
-	var arrMETAR = 'Enter an Airport';
+	var arr = {
+		heading: 'Arrival Airport: XXXX',
+		input: '',
+		atisCode: '',
+		atisText: '',
+		metar: ''
+	};
 
 	enum fetchMode {
 		DEP,
 		ARR
 	}
+
+	// Create an instance of VariableWatcher
+	const depAptWatcher = new VariableWatcher();
+	const arrAptWatcher = new VariableWatcher();
+
+	// Listen for the 'change' event
+	depAptWatcher.on('change', (val: any) => {
+		dep.input = val;
+		console.log('Departure Airport changed:', val);
+		dep.heading = 'Departure Airport: ' + val;
+		fetchATIS(fetchMode.DEP);
+		fetchMETAR(fetchMode.DEP);
+	});
+	arrAptWatcher.on('change', (val: any) => {
+		console.log('Arrival Airport changed:', val);
+		arr.input = val;
+		arr.heading = 'Arrival Airport: ' + val;
+		fetchATIS(fetchMode.ARR);
+		fetchMETAR(fetchMode.ARR);
+	});
 
 	async function fetchSimbriefRoute() {
 		console.log('');
@@ -41,8 +76,8 @@
 			const response = await fetch('https://www.simbrief.com/api/xml.fetcher.php?username=' + settings.simbriefUsername + '&json=1');
 			data = await response.json();
 			//console.log(data);
-			depAirport = data.origin.icao_code;
-			arrAirport = data.destination.icao_code;
+			depAptWatcher.var = data.origin.icao_code;
+			arrAptWatcher.var = data.destination.icao_code;
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
 		}
@@ -57,16 +92,16 @@
 			//console.log(data);
 			var atisList: any = [];
 
-			if (mode == fetchMode.DEP) tmpAirport = depAirport.toUpperCase();
-			else if (mode == fetchMode.ARR) tmpAirport = arrAirport.toUpperCase();
+			if (mode == fetchMode.DEP) tmpAirport = depAptWatcher.var.toUpperCase();
+			else if (mode == fetchMode.ARR) tmpAirport = arrAptWatcher.var.toUpperCase();
 			const response = await fetch(VATSIM_METAR_URL + tmpAirport);
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
 			}
 			const data = await response.text();
 			console.log(data);
-			if (mode == fetchMode.DEP) depMETAR = data;
-			else if (mode == fetchMode.ARR) arrMETAR = data;
+			if (mode == fetchMode.DEP) dep.metar = data;
+			else if (mode == fetchMode.ARR) arr.metar = data;
 		} catch (error) {
 			console.error('There was a problem fetching the data:', error);
 		}
@@ -87,8 +122,8 @@
 			//console.log(data);
 			var atisList: any = [];
 
-			if (mode == fetchMode.DEP) tmpAirport = depAirport.toUpperCase();
-			else if (mode == fetchMode.ARR) tmpAirport = arrAirport.toUpperCase();
+			if (mode == fetchMode.DEP) tmpAirport = depAptWatcher.var.toUpperCase();
+			else if (mode == fetchMode.ARR) tmpAirport = arrAptWatcher.var.toUpperCase();
 
 			atisData.forEach((element: any) => {
 				if (element.callsign.includes(tmpAirport)) {
@@ -110,12 +145,12 @@
 			}
 
 			if (mode == fetchMode.DEP) {
-				depATIS = tmpATIS;
-				depAtisCode = tmpAtisCode;
+				dep.atisText = tmpATIS;
+				dep.atisCode = tmpAtisCode;
 			}
 			if (mode == fetchMode.ARR) {
-				arrATIS = tmpATIS;
-				arrAtisCode = tmpAtisCode;
+				arr.atisText = tmpATIS;
+				arr.atisCode = tmpAtisCode;
 			}
 		} catch (error) {
 			console.error('There was a problem fetching the data:', error);
@@ -123,38 +158,28 @@
 	}
 
 	function depInputHandler() {
-		depAirport = depAirport.toUpperCase();
+		dep.input = dep.input.toUpperCase();
 
-		if (depAirport.length == 4) {
-			depAirportConf = 'Departure Airport: ' + depAirport;
-			fetchATIS(fetchMode.DEP);
-			fetchMETAR(fetchMode.DEP);
-		} else if (depAirport.length > 4) {
-			depAirport = depAirport.slice(0, 4);
+		if (dep.input.length == 4) {
+			depAptWatcher.var = dep.input;
+		} else if (dep.input.length > 4) {
+			dep.input = dep.input.slice(0, 4);
 		}
 	}
 
 	function arrInputHandler() {
-		arrAirport = arrAirport.toUpperCase();
+		arr.input = arr.input.toUpperCase();
 
-		if (arrAirport.length == 4) {
-			arrAirportConf = 'Departure Airport: ' + arrAirport;
-			fetchATIS(fetchMode.ARR);
-			fetchMETAR(fetchMode.ARR);
-		} else if (arrAirport.length > 4) {
-			arrAirport = arrAirport.slice(0, 4);
+		if (arr.input.length == 4) {
+			arrAptWatcher.var = arr.input;
+		} else if (arr.input.length > 4) {
+			arr.input = arr.input.slice(0, 4);
 		}
 	}
 
 	async function simbriefButtonHandler() {
 		console.log('Simbrief Button');
 		await fetchSimbriefRoute();
-		depAirportConf = 'Departure Airport: ' + depAirport;
-		arrAirportConf = 'Arrival Airport: ' + arrAirport;
-		fetchATIS(fetchMode.DEP);
-		fetchATIS(fetchMode.ARR);
-		fetchMETAR(fetchMode.DEP);
-		fetchMETAR(fetchMode.ARR);
 	}
 
 	// in your Svelte component
@@ -162,65 +187,65 @@
 	const arrAptSave: Writable<string> = localStorageStore('arrAptSave', 'EDDS');
 
 	onMount(() => {
-		depAirport = get(depAptSave);
-		arrAirport = get(arrAptSave);
+		depAptWatcher.var = get(depAptSave);
+		arrAptWatcher.var = get(arrAptSave);
 
 		//getting Data
-		depAirportConf = 'Departure Airport: ' + depAirport;
-		arrAirportConf = 'Arrival Airport: ' + arrAirport;
-		fetchATIS(fetchMode.DEP);
-		fetchATIS(fetchMode.ARR);
-		fetchMETAR(fetchMode.DEP);
-		fetchMETAR(fetchMode.ARR);
+		dep.heading = 'Departure Airport: ' + depAptWatcher.var;
+		arr.heading = 'Arrival Airport: ' + arrAptWatcher.var;
 	});
 
 	onDestroy(() => {
 		// Perform cleanup tasks here
-		depAptSave.set(depAirport);
-		arrAptSave.set(arrAirport);
+		depAptSave.set(depAptWatcher.var);
+		arrAptSave.set(arrAptWatcher.var);
 		console.log('Component is being destroyed');
 	});
 </script>
 
 <div class="grid grid-cols-3 p-2">
-	<div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
-		<div class="input-group-shim">Dep</div>
-		<input type="text" placeholder="EDDS" bind:value={depAirport} on:input={depInputHandler} />
+	<div class="mx-3">
+		<div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
+			<div class="input-group-shim">Dep</div>
+			<input type="text" placeholder="EDDS" bind:value={dep.input} on:input={depInputHandler} />
+		</div>
 	</div>
 
-	<div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
-		<div class="input-group-shim">Arr</div>
-		<input type="text" placeholder="EDDS" bind:value={arrAirport} on:input={arrInputHandler} />
+	<div class="mx-3">
+		<div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
+			<div class="input-group-shim">Arr</div>
+			<input type="text" placeholder="EDDS" bind:value={arr.input} on:input={arrInputHandler} />
+		</div>
 	</div>
-
-	<button type="button" class="btn variant-filled" on:click={simbriefButtonHandler}>Simbrief</button>
+	<button type="button" class="btn variant-filled mx-3" on:click={simbriefButtonHandler}>Simbrief</button>
 </div>
 
-<div class="grid grid-rows-2 grid-flow-col gap-4 p-2">
-	<div class="card">
-		<header class="card-header">{depAirportConf}</header>
+<div class="flex flex-col p-2">
+	<div class="card my-1">
+		<header class="card-header">{dep.heading}</header>
 		<section class="p-4">
-			<div class="card">
-				<header class="card-header">ATIS {depAtisCode}</header>
-				<section class="p-4">{@html depATIS}</section>
+			<div class="card mb-2">
+				<header class="card-header">ATIS {dep.atisCode}</header>
+				<section class="p-4">{@html dep.atisText}</section>
 			</div>
 			<div class="card">
 				<header class="card-header">METAR</header>
-				<section class="p-4">{depMETAR}</section>
+				<section class="p-4">{dep.metar}</section>
 			</div>
 		</section>
 	</div>
 
-	<div class="card">
-		<header class="card-header">{arrAirportConf}</header>
+	<div class="card my-1">
+		<header class="card-header">{arr.heading}</header>
 		<section class="p-4">
-			<div class="card">
-				<header class="card-header">ATIS {arrAtisCode}</header>
-				<section class="p-4">{arrATIS}</section>
+			<div class="card mb-2">
+				<header class="card-header">ATIS {arr.atisCode}</header>
+				<section class="p-4">{arr.atisText}</section>
 			</div>
+
 			<div class="card">
 				<header class="card-header">METAR</header>
-				<section class="p-4">{arrMETAR}</section>
+				<section class="p-4">{arr.metar}</section>
 			</div>
 		</section>
 	</div>
