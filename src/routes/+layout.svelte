@@ -23,7 +23,22 @@
 	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
 
 	import Header from './Header.svelte';
+
+	//Modal Component
+	import { Modal, getModalStore } from '@skeletonlabs/skeleton';
+	import type { ModalSettings, ModalComponent, ModalStore } from '@skeletonlabs/skeleton';
+	import { initializeStores } from '@skeletonlabs/skeleton';
+
+	initializeStores();
+
+
+	import settingsModal from '$lib/modals/settings.svelte';
+	const modalRegistry: Record<string, ModalComponent> = {
+		settingsModal: {ref: settingsModal}
+	}
 </script>
+
+<Modal components={modalRegistry}/>
 
 <AppShell>
 	<svelte:fragment slot="header"><Header /></svelte:fragment>
@@ -36,15 +51,3 @@
 	<!-- (pageFooter) -->
 	<!-- (footer) -->
 </AppShell>
-
-<!--
-<div class="app">
-
-	<Header />
-  
-	<main>
-		<slot />
-	</main>
-</div>
-
--->

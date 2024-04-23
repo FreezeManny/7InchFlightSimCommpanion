@@ -1,3 +1,3 @@
-export const settings = {
+export let settings = {
     simbriefUsername: "aplayz"
 }

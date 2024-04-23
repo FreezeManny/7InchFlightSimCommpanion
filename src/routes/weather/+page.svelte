@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { settings } from '$lib/settings';
-	import { EventEmitter } from 'events';
 	import { onMount } from 'svelte';
 	import { onDestroy } from 'svelte';
 
@@ -8,7 +7,8 @@
 	import type { Writable } from 'svelte/store';
 	import { get } from 'svelte/store';
 
-	const emitter = new EventEmitter();
+	
+	// Change the variables
 
 	const VATSIMDATAURL = 'https://data.vatsim.net/v3/vatsim-data.json';
 	const VATSIM_METAR_URL = 'https://metar.vatsim.net/';
